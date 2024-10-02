@@ -1,0 +1,38 @@
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden; /* Ensures no scrollbars appear */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f0f8ff; /* Background color for the body */
+  }
+  
+  body {
+    height: 100vh;
+  }
+  
+  canvas {
+    display: block;
+    border: 2px solid black;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100vw; /* 100% of the viewport width */
+    height: 100vh; /* 100% of the viewport height */
+  }
+  
+  #shootButton {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 100px;
+    height: 50px;
+    font-size: 20px;
+    background-color: #ff5050;
+    border: none;
+    color: white;
+    border-radius: 10px;
+  }
+  
