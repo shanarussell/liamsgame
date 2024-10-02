@@ -38,7 +38,6 @@ class Fragment {
 
 let fragments = []; // Array to store explosion fragments
 
-// Function to create the explosion effect
 function createExplosion(x, y) {
   for (let i = 0; i < 20; i++) {
     fragments.push(new Fragment(x, y)); // Create multiple fragments
@@ -270,6 +269,14 @@ canvas.addEventListener('touchmove', (event) => {
   if (fish.y < 0) fish.y = 0;
   if (fish.x + fish.width > canvas.width) fish.x = canvas.width - fish.width;
   if (fish.y + fish.height > canvas.height) fish.y = canvas.height - fish.height;
+});
+
+// Touch-based shooting for mobile
+canvas.addEventListener('touchstart', (event) => {
+  event.preventDefault(); // Prevent scrolling
+
+  // Shoot a cannonball when the user taps on the screen
+  shootCannonball();
 });
 
 // Start the game loop after images are loaded
