@@ -2,45 +2,82 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// Function to resize the canvas and adjust positions dynamically
+// Resize the canvas to fit the screen
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
 }
 
+// Fragment object to handle explosion particles
+class Fragment {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.size = Math.random() * 20 + 10; // Random size for fragments
+    this.speedX = (Math.random() - 0.5) * 10; // Random speed/direction
+    this.speedY = (Math.random() - 0.5) * 10; // Random speed/direction
+    this.opacity = 1; // Initial opacity for fade-out
+    this.fadeRate = 0.03; // Rate at which the fragment fades
+  }
+
+  update() {
+    this.x += this.speedX; // Move fragment horizontally
+    this.y += this.speedY; // Move fragment vertically
+    this.opacity -= this.fadeRate; // Gradually fade out the fragment
+  }
+
+  draw() {
+    if (this.opacity > 0) {
+      ctx.globalAlpha = this.opacity; // Set the opacity for fade-out effect
+      ctx.fillStyle = 'orange'; // Explosion fragment color
+      ctx.fillRect(this.x, this.y, this.size, this.size); // Draw fragment
+      ctx.globalAlpha = 1; // Reset opacity after drawing
+    }
+  }
+}
+
+let fragments = []; // Array to store explosion fragments
+
+// Function to create the explosion effect
+function createExplosion(x, y) {
+  for (let i = 0; i < 20; i++) {
+    fragments.push(new Fragment(x, y)); // Create multiple fragments
+  }
+}
+
 // Load images
 const fishImage = new Image();
-fishImage.src = 'images/fish-with-cannon.png'; // Path to your fish image
+fishImage.src = 'images/fish-with-cannon.png'; // Ensure the path is correct
 
 const cannonballImage = new Image();
-cannonballImage.src = 'images/cannonball.png'; // Path to your cannonball image
+cannonballImage.src = 'images/cannonball.png'; // Ensure the path is correct
 
 const monsterImage = new Image();
-monsterImage.src = 'images/green-monster.png'; // Path to your monster image
+monsterImage.src = 'images/green-monster.png'; // Ensure the path is correct
 
 // Fish object
 let fish = {
   x: 100,
-  y: canvas.height / 4,  // 1/4th of the canvas height for the fish
+  y: canvas.height / 4,
   width: 200,
   height: 100,
   speed: 5,
-  dx: 0,  // horizontal movement (delta x)
-  dy: 0   // vertical movement (delta y)
+  dx: 0, // Movement in X direction
+  dy: 0, // Movement in Y direction
 };
 
-// Monster object with full movement across the screen
+// Monster object
 let monster = {
   x: 400,
-  y: 100,  // Start higher up so it's not cut off
-  width: 200,  // Adjusted to fit better on screen
-  height: 100,  // Adjusted to fit better on screen
-  speedX: 3, // Speed of the monster horizontally
-  speedY: 3, // Speed of the monster vertically
-  destroyed: false // Track if the monster has been destroyed
+  y: 100,
+  width: 200,
+  height: 100,
+  speedX: 3, // Horizontal speed
+  speedY: 3, // Vertical speed
+  destroyed: false,
 };
 
-let cannonballs = [];
+let cannonballs = []; // Store the cannonballs
 
 // Function to shoot cannonballs
 function shootCannonball() {
@@ -73,11 +110,12 @@ function moveMonster() {
 
     // Bounce off the walls horizontally
     if (monster.x < 0 || monster.x + monster.width > canvas.width) {
-      monster.speedX *= -1; // Reverse horizontal direction
+      monster.speedX *= -1;
     }
+
     // Bounce off the walls vertically
     if (monster.y < 0 || monster.y + monster.height > canvas.height) {
-      monster.speedY *= -1; // Reverse vertical direction
+      monster.speedY *= -1;
     }
   }
 }
@@ -99,7 +137,8 @@ function moveCannonballs() {
 
     // Check for collision with the monster
     if (!monster.destroyed && detectCollision(cannonballs[i], monster)) {
-      // Mark the monster as destroyed
+      // Trigger explosion effect and mark monster as destroyed
+      createExplosion(monster.x + monster.width / 2, monster.y + monster.height / 2);
       monster.destroyed = true;
 
       // Remove the cannonball that hit the monster
@@ -119,23 +158,21 @@ function moveCannonballs() {
 function drawGame() {
   // Set background color
   ctx.fillStyle = '#34bcec';
-  ctx.fillRect(0, 0, canvas.width, canvas.height); // Fill the entire canvas with the background color
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Draw the fish or placeholder if the image fails
+  // Draw the fish
   if (fishImage.complete && fishImage.naturalWidth > 0) {
     ctx.drawImage(fishImage, fish.x, fish.y, fish.width, fish.height);
   } else {
-    // Fallback to drawing a blue rectangle
     ctx.fillStyle = 'blue';
     ctx.fillRect(fish.x, fish.y, fish.width, fish.height);
   }
 
-  // Draw the monster or placeholder if the image fails
+  // Draw the monster if it's not destroyed
   if (!monster.destroyed) {
     if (monsterImage.complete && monsterImage.naturalWidth > 0) {
       ctx.drawImage(monsterImage, monster.x, monster.y, monster.width, monster.height);
     } else {
-      // Fallback to drawing a green rectangle
       ctx.fillStyle = 'green';
       ctx.fillRect(monster.x, monster.y, monster.width, monster.height);
     }
@@ -146,38 +183,36 @@ function drawGame() {
     if (cannonballImage.complete && cannonballImage.naturalWidth > 0) {
       ctx.drawImage(cannonballImage, cannonballs[i].x, cannonballs[i].y, cannonballs[i].width, cannonballs[i].height);
     } else {
-      // Fallback to drawing a gray rectangle for cannonballs
       ctx.fillStyle = 'gray';
       ctx.fillRect(cannonballs[i].x, cannonballs[i].y, cannonballs[i].width, cannonballs[i].height);
     }
   }
+
+  // Draw and update fragments for explosion
+  for (let i = fragments.length - 1; i >= 0; i--) {
+    fragments[i].update();
+    fragments[i].draw();
+
+    // Remove fragments once they are fully faded out
+    if (fragments[i].opacity <= 0) {
+      fragments.splice(i, 1);
+    }
+  }
 }
 
-// Touch-based movement for mobile devices
-canvas.addEventListener('touchmove', (event) => {
-  event.preventDefault(); // Prevent scrolling
+// Main game loop
+function gameLoop() {
+  drawGame();
+  moveFish();
+  moveMonster();
+  moveCannonballs();
+  requestAnimationFrame(gameLoop);
+}
 
-  const touch = event.touches[0];
-  const rect = canvas.getBoundingClientRect();
+// Resize the canvas when the window is resized
+window.addEventListener('resize', resizeCanvas);
 
-  // Set fish position to follow the touch position
-  fish.x = touch.clientX - rect.left - fish.width / 2;
-  fish.y = touch.clientY - rect.top - fish.height / 2;
-
-  // Boundary detection to keep fish within canvas
-  if (fish.x < 0) fish.x = 0;
-  if (fish.y < 0) fish.y = 0;
-  if (fish.x + fish.width > canvas.width) fish.x = canvas.width - fish.width;
-  if (fish.y + fish.height > canvas.height) fish.y = canvas.height - fish.height;
-});
-
-// On mobile devices, a tap anywhere on the screen will shoot
-canvas.addEventListener('touchstart', (event) => {
-  shootCannonball();
-  event.preventDefault(); // Prevent scrolling on tap
-});
-
-// Keyboard controls for movement (desktop)
+// Add keyboard controls for moving the fish (desktop)
 window.addEventListener('keydown', (event) => {
   switch (event.code) {
     case 'ArrowUp':
@@ -219,24 +254,28 @@ window.addEventListener('keyup', (event) => {
   }
 });
 
-// Main game loop
-function gameLoop() {
-  drawGame();
-  moveFish();
-  moveMonster();
-  moveCannonballs();
-  requestAnimationFrame(gameLoop);
-}
+// Touch-based movement for mobile
+canvas.addEventListener('touchmove', (event) => {
+  event.preventDefault(); // Prevent scrolling
 
-// Resize the canvas when the window is resized
-window.addEventListener('resize', resizeCanvas);
+  const touch = event.touches[0];
+  const rect = canvas.getBoundingClientRect();
 
-// Start the game loop only after both images are loaded
+  // Set fish position to follow the touch position
+  fish.x = touch.clientX - rect.left - fish.width / 2;
+  fish.y = touch.clientY - rect.top - fish.height / 2;
+
+  // Boundary detection to keep fish within canvas
+  if (fish.x < 0) fish.x = 0;
+  if (fish.y < 0) fish.y = 0;
+  if (fish.x + fish.width > canvas.width) fish.x = canvas.width - fish.width;
+  if (fish.y + fish.height > canvas.height) fish.y = canvas.height - fish.height;
+});
+
+// Start the game loop after images are loaded
 fishImage.onload = function () {
   monsterImage.onload = function () {
-    setTimeout(() => {
-      resizeCanvas(); // Call resizeCanvas initially
-      gameLoop(); // Start the game loop
-    }, 500); // 500ms delay to ensure images load properly
+    resizeCanvas(); // Initial canvas size
+    gameLoop(); // Start the game loop
   };
 };
