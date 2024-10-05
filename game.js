@@ -8,6 +8,14 @@ function resizeCanvas() {
   canvas.height = window.innerHeight;
 }
 
+// Define the restricted area where the life force boxes are located
+const restrictedArea = {
+  x: 0,
+  y: 0,
+  width: window.innerWidth,
+  height: 80 // Adjust this based on the height of your life force boxes
+};
+
 // Fragment object to handle explosion particles
 class Fragment {
   constructor(x, y) {
@@ -128,8 +136,8 @@ class Monster {
         this.speedX *= -1;
       }
 
-      // Bounce off the walls vertically
-      if (this.y < 0 || this.y + this.height > canvas.height) {
+      // Bounce off the walls vertically and avoid the restricted area
+      if (this.y < restrictedArea.height || this.y + this.height > canvas.height) {
         this.speedY *= -1;
       }
     }
@@ -175,7 +183,7 @@ function addMonster() {
     const newMonster = new Monster(
       img,
       Math.random() * canvas.width,
-      Math.random() * canvas.height,
+      Math.random() * (canvas.height - restrictedArea.height) + restrictedArea.height,
       200, 100,
       (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1),
       (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1),
@@ -184,7 +192,6 @@ function addMonster() {
     monsters.push(newMonster);
     currentMonsterIndex++;
 
-    // Add the next monster after 5 seconds
     if (currentMonsterIndex < monsterImages.length) {
       setTimeout(addMonster, 5000);
     }
@@ -204,16 +211,18 @@ function shootCannonball() {
   });
 }
 
-// Function to move the fish
+// Function to move the fish and prevent it from moving behind life bars
 function moveFish() {
   fish.x += fish.dx;
   fish.y += fish.dy;
 
+  // Prevent the fish from entering the restricted area at the top
+  if (fish.y < restrictedArea.height) fish.y = restrictedArea.height;
+
   // Boundary detection to keep fish within canvas
   if (fish.x < 0) fish.x = 0;
-  if (fish.y < 0) fish.y = 0;
-  if (fish.x + fish.width > canvas.width) fish.x = canvas.width - fish.width;
   if (fish.y + fish.height > canvas.height) fish.y = canvas.height - fish.height;
+  if (fish.x + fish.width > canvas.width) fish.x = canvas.width - fish.width;
 }
 
 // Function to move the cannonballs
