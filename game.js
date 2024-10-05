@@ -51,8 +51,17 @@ fishImage.src = 'images/fish-with-cannon.png'; // Ensure the path is correct
 const cannonballImage = new Image();
 cannonballImage.src = 'images/cannonball.png'; // Ensure the path is correct
 
-const monsterImage = new Image();
-monsterImage.src = 'images/green-monster.png'; // Ensure the path is correct
+const monsterImages = [
+  'images/green-monster.png',
+  'images/monster-2.png',
+  'images/monster-3.png',
+  'images/monster-4.png',
+  'images/monster-5.png'
+].map(src => {
+  const img = new Image();
+  img.src = src;
+  return img;
+});
 
 // Fish object
 let fish = {
@@ -65,16 +74,89 @@ let fish = {
   dy: 0, // Movement in Y direction
 };
 
-// Monster object
-let monster = {
-  x: 400,
-  y: 100,
-  width: 200,
-  height: 100,
-  speedX: 3, // Horizontal speed
-  speedY: 3, // Vertical speed
-  destroyed: false,
-};
+class Monster {
+  constructor(image, x, y, width, height, speedX, speedY) {
+    this.image = image;
+    this.x = x;
+    this.y = y;
+    this.width = width;
+    this.height = height;
+    this.speedX = speedX;
+    this.speedY = speedY;
+    this.destroyed = false;
+    this.hitCount = 0; // Track how many times the monster is hit
+  }
+
+  move() {
+    if (!this.destroyed) {
+      this.x += this.speedX;
+      this.y += this.speedY;
+
+      // Bounce off the walls horizontally
+      if (this.x < 0 || this.x + this.width > canvas.width) {
+        this.speedX *= -1;
+      }
+
+      // Bounce off the walls vertically
+      if (this.y < 0 || this.y + this.height > canvas.height) {
+        this.speedY *= -1;
+      }
+    }
+  }
+
+  draw() {
+    if (!this.destroyed) {
+      ctx.drawImage(this.image, this.x, this.y, this.width, this.height);
+    }
+  }
+
+  checkCollision(cannonball) {
+    return (
+      cannonball.x < this.x + this.width &&
+      cannonball.x + cannonball.width > this.x &&
+      cannonball.y < this.y + this.height &&
+      cannonball.y + cannonball.height > this.y
+    );
+  }
+
+  onHit() {
+    this.hitCount++;
+    if (this.hitCount >= 5) {
+      this.destroyed = true;
+    } else {
+      this.destroyed = true;
+      setTimeout(() => {
+        this.destroyed = false;
+      }, 5000); // Respawn after 5 seconds
+    }
+  }
+}
+
+// Keep track of active monsters and the current monster index
+let monsters = [];
+let currentMonsterIndex = 0;
+
+// Function to add a new monster every 5 seconds
+function addMonster() {
+  if (currentMonsterIndex < monsterImages.length) {
+    const monsterImage = monsterImages[currentMonsterIndex];
+    const newMonster = new Monster(
+      monsterImage,
+      Math.random() * canvas.width,
+      Math.random() * canvas.height,
+      200, 100,
+      (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1),
+      (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1)
+    );
+    monsters.push(newMonster);
+    currentMonsterIndex++;
+
+    // Add the next monster after 5 seconds
+    if (currentMonsterIndex < monsterImages.length) {
+      setTimeout(addMonster, 5000);
+    }
+  }
+}
 
 let cannonballs = []; // Store the cannonballs
 
@@ -101,52 +183,23 @@ function moveFish() {
   if (fish.y + fish.height > canvas.height) fish.y = canvas.height - fish.height;
 }
 
-// Function to move the monster and make it bounce
-function moveMonster() {
-  if (!monster.destroyed) {
-    monster.x += monster.speedX;
-    monster.y += monster.speedY;
-
-    // Bounce off the walls horizontally
-    if (monster.x < 0 || monster.x + monster.width > canvas.width) {
-      monster.speedX *= -1;
-    }
-
-    // Bounce off the walls vertically
-    if (monster.y < 0 || monster.y + monster.height > canvas.height) {
-      monster.speedY *= -1;
-    }
-  }
-}
-
-// Function to detect collision between a cannonball and the monster
-function detectCollision(cannonball, monster) {
-  return (
-    cannonball.x < monster.x + monster.width &&
-    cannonball.x + cannonball.width > monster.x &&
-    cannonball.y < monster.y + monster.height &&
-    cannonball.y + cannonball.height > monster.y
-  );
-}
-
-// Function to move cannonballs
+// Function to move the cannonballs
 function moveCannonballs() {
   for (let i = 0; i < cannonballs.length; i++) {
     cannonballs[i].x += cannonballs[i].speed;
 
-    // Check for collision with the monster
-    if (!monster.destroyed && detectCollision(cannonballs[i], monster)) {
-      // Trigger explosion effect and mark monster as destroyed
-      createExplosion(monster.x + monster.width / 2, monster.y + monster.height / 2);
-      monster.destroyed = true;
-
-      // Remove the cannonball that hit the monster
-      cannonballs.splice(i, 1);
-      break;
+    // Check for collision with any monster
+    for (let monster of monsters) {
+      if (!monster.destroyed && monster.checkCollision(cannonballs[i])) {
+        createExplosion(monster.x + monster.width / 2, monster.y + monster.height / 2);
+        monster.onHit();
+        cannonballs.splice(i, 1);
+        break;
+      }
     }
 
     // Remove cannonballs that go off screen
-    if (cannonballs[i].x > canvas.width) {
+    if (cannonballs[i] && cannonballs[i].x > canvas.width) {
       cannonballs.splice(i, 1);
       i--;
     }
@@ -167,15 +220,11 @@ function drawGame() {
     ctx.fillRect(fish.x, fish.y, fish.width, fish.height);
   }
 
-  // Draw the monster if it's not destroyed
-  if (!monster.destroyed) {
-    if (monsterImage.complete && monsterImage.naturalWidth > 0) {
-      ctx.drawImage(monsterImage, monster.x, monster.y, monster.width, monster.height);
-    } else {
-      ctx.fillStyle = 'green';
-      ctx.fillRect(monster.x, monster.y, monster.width, monster.height);
-    }
-  }
+  // Draw the monsters
+  monsters.forEach(monster => {
+    monster.move();
+    monster.draw();
+  });
 
   // Draw the cannonballs
   for (let i = 0; i < cannonballs.length; i++) {
@@ -203,7 +252,6 @@ function drawGame() {
 function gameLoop() {
   drawGame();
   moveFish();
-  moveMonster();
   moveCannonballs();
   requestAnimationFrame(gameLoop);
 }
@@ -281,8 +329,10 @@ canvas.addEventListener('touchstart', (event) => {
 
 // Start the game loop after images are loaded
 fishImage.onload = function () {
-  monsterImage.onload = function () {
-    resizeCanvas(); // Initial canvas size
-    gameLoop(); // Start the game loop
-  };
+  Promise.all(monsterImages.map(img => new Promise(resolve => img.onload = resolve)))
+    .then(() => {
+      resizeCanvas(); // Initial canvas size
+      addMonster(); // Start adding monsters every 5 seconds
+      gameLoop(); // Start the game loop
+    });
 };
