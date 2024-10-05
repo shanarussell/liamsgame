@@ -52,15 +52,15 @@ const cannonballImage = new Image();
 cannonballImage.src = 'images/cannonball.png'; // Ensure the path is correct
 
 const monsterImages = [
-  'images/green-monster.png',
-  'images/monster-2.png',
-  'images/monster-3.png',
-  'images/monster-4.png',
-  'images/monster-5.png'
-].map(src => {
+  { src: 'images/green-monster.png', name: 'green', color: '#00FF00' }, // Green monster
+  { src: 'images/monster-2.png', name: 'blue', color: '#0000FF' }, // Blue monster
+  { src: 'images/monster-3.png', name: 'purple', color: '#800080' }, // Purple monster
+  { src: 'images/monster-4.png', name: 'yellow', color: '#FFFF00' }, // Yellow monster
+  { src: 'images/monster-5.png', name: 'magenta', color: '#FF00FF' }  // Magenta monster
+].map(data => {
   const img = new Image();
-  img.src = src;
-  return img;
+  img.src = data.src;
+  return { ...data, img };
 });
 
 // Fish object
@@ -74,8 +74,36 @@ let fish = {
   dy: 0, // Movement in Y direction
 };
 
+// Initialize hearts for every monster at the start of the game
+function initializeHearts() {
+  monsterImages.forEach(({ name }) => {
+    updateLifeForce(name, 0); // Set all monsters to 0 hits (full hearts)
+  });
+}
+
+// Function to update the CSS-based life force hearts for each monster
+function updateLifeForce(monsterName, hitCount) {
+  const heartsContainer = document.querySelector(`.hearts[data-monster="${monsterName}"]`);
+  
+  // Clear existing hearts
+  heartsContainer.innerHTML = '';
+
+  // Add hearts dynamically based on life left
+  for (let i = 0; i < 5; i++) {
+    const heart = document.createElement('div');
+    heart.classList.add('heart');
+    
+    // Add the "lost" class for hearts that represent lost life
+    if (i < hitCount) {
+      heart.classList.add('lost');
+    }
+    
+    heartsContainer.appendChild(heart);
+  }
+}
+
 class Monster {
-  constructor(image, x, y, width, height, speedX, speedY) {
+  constructor(image, x, y, width, height, speedX, speedY, name, color) {
     this.image = image;
     this.x = x;
     this.y = y;
@@ -85,6 +113,9 @@ class Monster {
     this.speedY = speedY;
     this.destroyed = false;
     this.hitCount = 0; // Track how many times the monster is hit
+    this.maxLife = 5; // Total hearts
+    this.name = name;
+    this.color = color; // Name color
   }
 
   move() {
@@ -121,7 +152,8 @@ class Monster {
 
   onHit() {
     this.hitCount++;
-    if (this.hitCount >= 5) {
+    updateLifeForce(this.name, this.hitCount); // Update the CSS hearts
+    if (this.hitCount >= this.maxLife) {
       this.destroyed = true;
     } else {
       this.destroyed = true;
@@ -139,14 +171,15 @@ let currentMonsterIndex = 0;
 // Function to add a new monster every 5 seconds
 function addMonster() {
   if (currentMonsterIndex < monsterImages.length) {
-    const monsterImage = monsterImages[currentMonsterIndex];
+    const { img, name, color } = monsterImages[currentMonsterIndex];
     const newMonster = new Monster(
-      monsterImage,
+      img,
       Math.random() * canvas.width,
       Math.random() * canvas.height,
       200, 100,
       (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1),
-      (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1)
+      (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1),
+      name, color
     );
     monsters.push(newMonster);
     currentMonsterIndex++;
@@ -329,9 +362,10 @@ canvas.addEventListener('touchstart', (event) => {
 
 // Start the game loop after images are loaded
 fishImage.onload = function () {
-  Promise.all(monsterImages.map(img => new Promise(resolve => img.onload = resolve)))
+  Promise.all(monsterImages.map(({ img }) => new Promise(resolve => img.onload = resolve)))
     .then(() => {
       resizeCanvas(); // Initial canvas size
+      initializeHearts(); // Initialize the life bars with hearts at the start
       addMonster(); // Start adding monsters every 5 seconds
       gameLoop(); // Start the game loop
     });

@@ -1,38 +1,87 @@
 html, body {
-    margin: 0;
-    padding: 0;
-    height: 100%;
-    overflow: hidden; /* Ensures no scrollbars appear */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: #f0f8ff; /* Background color for the body */
-  }
-  
-  body {
-    height: 100vh;
-  }
-  
-  canvas {
-    display: block;
-    border: 2px solid black;
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100vw; /* 100% of the viewport width */
-    height: 100vh; /* 100% of the viewport height */
-  }
-  
-  #shootButton {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    width: 100px;
-    height: 50px;
-    font-size: 20px;
-    background-color: #ff5050;
-    border: none;
-    color: white;
-    border-radius: 10px;
-  }
-  
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #f0f8ff;
+}
+
+canvas {
+  display: block;
+  border: 2px solid black;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+}
+
+#life-bars {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.life-bar {
+  display: flex;
+  align-items: center;
+}
+
+.name {
+  font-size: 16px;
+  margin-right: 10px;
+}
+
+.hearts {
+  display: flex;
+  gap: 10px; /* Increased gap for more space between hearts */
+}
+
+/* Heart shape for life force using :before and :after */
+.heart {
+  position: relative;
+  width: 20px; /* Adjust width for smaller hearts */
+  height: 20px; /* Adjust height for smaller hearts */
+  background: red;
+  transform: rotate(-45deg);
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.heart:before, .heart:after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: red;
+  border-radius: 50%;
+}
+
+.heart:before {
+  top: -10px;
+  left: 0;
+}
+
+.heart:after {
+  top: 0;
+  left: 10px;
+}
+
+.heart.lost {
+  background: white;
+}
+
+.heart.lost:before, .heart.lost:after {
+  background: white;
+}
+
+/* Optional: Pixelate the hearts for 8-bit feel */
+canvas, .heart {
+  image-rendering: pixelated;
+}

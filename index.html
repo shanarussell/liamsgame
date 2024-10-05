@@ -3,14 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Fish Cannon Game</title>
+  <title>Liam's Sussy Schoolgrounds</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
  
   <div id="debug"></div>
-<canvas id="gameCanvas"></canvas>
+  <canvas id="gameCanvas"></canvas>
 
+  <!-- Life force bars for each monster -->
+  <div id="life-bars">
+    <div class="life-bar" id="green-life">
+        <span class="name">Green:</span>
+        <div class="hearts" data-monster="green"></div>
+    </div>
+    <div class="life-bar" id="blue-life">
+        <span class="name">Blue:</span>
+        <div class="hearts" data-monster="blue"></div>
+    </div>
+    <div class="life-bar" id="purple-life">
+        <span class="name">Purple:</span>
+        <div class="hearts" data-monster="purple"></div>
+    </div>
+    <div class="life-bar" id="yellow-life">
+        <span class="name">Yellow:</span>
+        <div class="hearts" data-monster="yellow"></div>
+    </div>
+    <div class="life-bar" id="magenta-life">
+        <span class="name">Magenta:</span>
+        <div class="hearts" data-monster="magenta"></div>
+    </div>
+  </div>
 
   <script src="game.js"></script>
 </body>
