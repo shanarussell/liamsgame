@@ -53,8 +53,21 @@ const purpleMonsterSound = new Audio('sounds/Gorlila death line.m4a');
 // Assign a default death sound for monsters without a specific sound
 const defaultDeathSound = magentaMonsterSound;
 
+// Load revive sounds
+const greenMonsterReviveSound = new Audio('sounds/Green monkey revive.m4a');
+const magentaMonsterReviveSound = new Audio('sounds/Magenta revive line.m4a');
+const genericReviveSound = new Audio('sounds/Monkey revive line.m4a');
+
+// Array of revive sounds for random selection
+const reviveSounds = [
+    new Audio('sounds/Monkey revive line.m4a'),
+    new Audio('sounds/Other revive sound 1.m4a'),
+    new Audio('sounds/Other revive sound 2.m4a'),
+];
 
 
+
+let destroyedCount = 0;
 
 let fragments = []; // Array to store explosion fragments
 
@@ -193,17 +206,62 @@ class Monster {
                 purpleMonsterSound.play();
                 break;
             default:
-                // Play the default death line sound for other monsters
-                defaultDeathSound.play();
+                defaultDeathSound.play(); // Default sound for others
                 break;
         }
-        this.destroyed = true; // Mark the monster as destroyed
+        this.destroyed = true;
+        destroyedCount++; // Increment destroyed count
+
+        // Check if all monsters are destroyed
+        if (destroyedCount === monsterImages.length) {
+            setTimeout(restartGame, 2000); // Restart game after delay
+        }
     }
 }
 
 
 
 }
+
+
+function restartGame() {
+  destroyedCount = 0; // Reset destroyed count
+  monsters = []; // Clear existing monsters
+  currentMonsterIndex = 0; // Reset monster index
+
+  // Add all monsters again
+  monsterImages.forEach(({ img, name, color }) => {
+      const newMonster = new Monster(
+          img,
+          Math.random() * canvas.width,
+          Math.random() * (canvas.height - restrictedArea.height) + restrictedArea.height,
+          200, 100,
+          (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1),
+          (Math.random() * 2 + 1) * (Math.random() > 0.5 ? 1 : -1),
+          name, color
+      );
+      monsters.push(newMonster);
+
+      // Play revive sound based on monster type
+      switch (name) {
+          case 'green':
+              greenMonsterReviveSound.play();
+              break;
+          case 'magenta':
+              magentaMonsterReviveSound.play();
+              break;
+          default:
+              // Play a random revive sound for others
+              const randomSound = reviveSounds[Math.floor(Math.random() * reviveSounds.length)];
+              randomSound.play();
+              break;
+      }
+  });
+
+  // Start the game loop again
+  gameLoop();
+}
+
 
 // Monsters array and index
 let monsters = [];
