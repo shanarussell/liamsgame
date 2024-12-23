@@ -29,42 +29,60 @@ class Fragment {
   }
 
   update() {
-    this.x += this.speedX; // Move fragment horizontally
-    this.y += this.speedY; // Move fragment vertically
+    this.x += this.speedX;
+    this.y += this.speedY;
     this.opacity -= this.fadeRate; // Gradually fade out the fragment
   }
 
   draw() {
     if (this.opacity > 0) {
-      ctx.globalAlpha = this.opacity; // Set the opacity for fade-out effect
+      ctx.globalAlpha = this.opacity;
       ctx.fillStyle = 'orange'; // Explosion fragment color
-      ctx.fillRect(this.x, this.y, this.size, this.size); // Draw fragment
+      ctx.fillRect(this.x, this.y, this.size, this.size);
       ctx.globalAlpha = 1; // Reset opacity after drawing
     }
   }
 }
 
+// Load sounds
+const ackSound = new Audio('sounds/ack.m4a');
+const greenMonsterSound = new Audio('sounds/Green monkey death line.m4a');
+const magentaMonsterSound = new Audio('sounds/Magenta death line.m4a');
+const purpleMonsterSound = new Audio('sounds/Gorlila death line.m4a');
+
+// Assign a default death sound for monsters without a specific sound
+const defaultDeathSound = magentaMonsterSound;
+
+
+
+
 let fragments = []; // Array to store explosion fragments
 
+// Allow audio playback on user interaction
+window.addEventListener('click', () => {
+  greenMonsterSound.play().catch(() => {}); // Attempt playback silently
+});
+
+// Create explosion effect
 function createExplosion(x, y) {
   for (let i = 0; i < 20; i++) {
-    fragments.push(new Fragment(x, y)); // Create multiple fragments
+    fragments.push(new Fragment(x, y));
   }
 }
 
 // Load images
 const fishImage = new Image();
-fishImage.src = 'images/fish-with-cannon.png'; // Ensure the path is correct
+fishImage.src = 'images/fish-with-cannon.png';
 
 const cannonballImage = new Image();
-cannonballImage.src = 'images/cannonball.png'; // Ensure the path is correct
+cannonballImage.src = 'images/cannonball.png';
 
 const monsterImages = [
-  { src: 'images/green-monster.png', name: 'green', color: '#00FF00' }, // Green monster
-  { src: 'images/monster-2.png', name: 'blue', color: '#0000FF' }, // Blue monster
-  { src: 'images/monster-3.png', name: 'purple', color: '#800080' }, // Purple monster
-  { src: 'images/monster-4.png', name: 'yellow', color: '#FFFF00' }, // Yellow monster
-  { src: 'images/monster-5.png', name: 'magenta', color: '#FF00FF' }  // Magenta monster
+  { src: 'images/green-monster.png', name: 'green', color: '#00FF00' },
+  { src: 'images/monster-2.png', name: 'blue', color: '#0000FF' },
+  { src: 'images/monster-3.png', name: 'purple', color: '#800080' },
+  { src: 'images/monster-4.png', name: 'yellow', color: '#FFFF00' },
+  { src: 'images/monster-5.png', name: 'magenta', color: '#FF00FF' }
 ].map(data => {
   const img = new Image();
   img.src = data.src;
@@ -72,44 +90,37 @@ const monsterImages = [
 });
 
 // Fish object
-let fish = {
+const fish = {
   x: 100,
   y: canvas.height / 4,
   width: 200,
   height: 100,
   speed: 5,
-  dx: 0, // Movement in X direction
-  dy: 0, // Movement in Y direction
+  dx: 0,
+  dy: 0,
 };
 
-// Initialize hearts for every monster at the start of the game
+// Initialize hearts for each monster
 function initializeHearts() {
   monsterImages.forEach(({ name }) => {
-    updateLifeForce(name, 0); // Set all monsters to 0 hits (full hearts)
+    updateLifeForce(name, 0);
   });
 }
 
-// Function to update the CSS-based life force hearts for each monster
+// Update life force hearts for each monster
 function updateLifeForce(monsterName, hitCount) {
   const heartsContainer = document.querySelector(`.hearts[data-monster="${monsterName}"]`);
-  
-  // Clear existing hearts
-  heartsContainer.innerHTML = '';
+  heartsContainer.innerHTML = ''; // Clear existing hearts
 
-  // Add hearts dynamically based on life left
   for (let i = 0; i < 5; i++) {
     const heart = document.createElement('div');
     heart.classList.add('heart');
-    
-    // Add the "lost" class for hearts that represent lost life
-    if (i < hitCount) {
-      heart.classList.add('lost');
-    }
-    
+    if (i < hitCount) heart.classList.add('lost'); // Mark as lost
     heartsContainer.appendChild(heart);
   }
 }
 
+// Monster class
 class Monster {
   constructor(image, x, y, width, height, speedX, speedY, name, color) {
     this.image = image;
@@ -120,10 +131,10 @@ class Monster {
     this.speedX = speedX;
     this.speedY = speedY;
     this.destroyed = false;
-    this.hitCount = 0; // Track how many times the monster is hit
-    this.maxLife = 5; // Total hearts
+    this.hitCount = 0;
+    this.maxLife = 5;
     this.name = name;
-    this.color = color; // Name color
+    this.color = color;
   }
 
   move() {
@@ -131,14 +142,16 @@ class Monster {
       this.x += this.speedX;
       this.y += this.speedY;
 
-      // Bounce off the walls horizontally
+      // Horizontal boundaries
       if (this.x < 0 || this.x + this.width > canvas.width) {
         this.speedX *= -1;
+        this.x = Math.max(0, Math.min(this.x, canvas.width - this.width));
       }
 
-      // Bounce off the walls vertically and avoid the restricted area
+      // Vertical boundaries
       if (this.y < restrictedArea.height || this.y + this.height > canvas.height) {
         this.speedY *= -1;
+        this.y = Math.max(restrictedArea.height, Math.min(this.y, canvas.height - this.height));
       }
     }
   }
@@ -161,22 +174,41 @@ class Monster {
   onHit() {
     this.hitCount++;
     updateLifeForce(this.name, this.hitCount); // Update the CSS hearts
-    if (this.hitCount >= this.maxLife) {
-      this.destroyed = true;
-    } else {
-      this.destroyed = true;
-      setTimeout(() => {
-        this.destroyed = false;
-      }, 5000); // Respawn after 5 seconds
+
+    // Play "ack" sound for all monsters on hits 1 through 4
+    if (this.hitCount < this.maxLife) {
+        ackSound.play();
     }
-  }
+
+    // Handle specific sounds for the 5th hit
+    if (this.hitCount >= this.maxLife) {
+        switch (this.name) {
+            case 'green':
+                greenMonsterSound.play();
+                break;
+            case 'magenta':
+                magentaMonsterSound.play();
+                break;
+            case 'purple':
+                purpleMonsterSound.play();
+                break;
+            default:
+                // Play the default death line sound for other monsters
+                defaultDeathSound.play();
+                break;
+        }
+        this.destroyed = true; // Mark the monster as destroyed
+    }
 }
 
-// Keep track of active monsters and the current monster index
+
+
+}
+
+// Monsters array and index
 let monsters = [];
 let currentMonsterIndex = 0;
 
-// Function to add a new monster every 5 seconds
 function addMonster() {
   if (currentMonsterIndex < monsterImages.length) {
     const { img, name, color } = monsterImages[currentMonsterIndex];
@@ -191,16 +223,14 @@ function addMonster() {
     );
     monsters.push(newMonster);
     currentMonsterIndex++;
-
-    if (currentMonsterIndex < monsterImages.length) {
-      setTimeout(addMonster, 5000);
-    }
+    if (currentMonsterIndex < monsterImages.length) setTimeout(addMonster, 5000);
   }
 }
 
-let cannonballs = []; // Store the cannonballs
+// Cannonballs array
+let cannonballs = [];
 
-// Function to shoot cannonballs
+// Cannonball shooting
 function shootCannonball() {
   cannonballs.push({
     x: fish.x + fish.width,
@@ -211,27 +241,23 @@ function shootCannonball() {
   });
 }
 
-// Function to move the fish and prevent it from moving behind life bars
+// Fish movement
 function moveFish() {
   fish.x += fish.dx;
   fish.y += fish.dy;
 
-  // Prevent the fish from entering the restricted area at the top
   if (fish.y < restrictedArea.height) fish.y = restrictedArea.height;
-
-  // Boundary detection to keep fish within canvas
   if (fish.x < 0) fish.x = 0;
-  if (fish.y + fish.height > canvas.height) fish.y = canvas.height - fish.height;
   if (fish.x + fish.width > canvas.width) fish.x = canvas.width - fish.width;
+  if (fish.y + fish.height > canvas.height) fish.y = canvas.height - fish.height;
 }
 
-// Function to move the cannonballs
+// Cannonball movement
 function moveCannonballs() {
   for (let i = 0; i < cannonballs.length; i++) {
     cannonballs[i].x += cannonballs[i].speed;
 
-    // Check for collision with any monster
-    for (let monster of monsters) {
+    for (const monster of monsters) {
       if (!monster.destroyed && monster.checkCollision(cannonballs[i])) {
         createExplosion(monster.x + monster.width / 2, monster.y + monster.height / 2);
         monster.onHit();
@@ -240,7 +266,6 @@ function moveCannonballs() {
       }
     }
 
-    // Remove cannonballs that go off screen
     if (cannonballs[i] && cannonballs[i].x > canvas.width) {
       cannonballs.splice(i, 1);
       i--;
@@ -248,13 +273,11 @@ function moveCannonballs() {
   }
 }
 
-// Function to draw the game
+// Draw the game
 function drawGame() {
-  // Set background color
   ctx.fillStyle = '#34bcec';
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Draw the fish
   if (fishImage.complete && fishImage.naturalWidth > 0) {
     ctx.drawImage(fishImage, fish.x, fish.y, fish.width, fish.height);
   } else {
@@ -262,31 +285,24 @@ function drawGame() {
     ctx.fillRect(fish.x, fish.y, fish.width, fish.height);
   }
 
-  // Draw the monsters
   monsters.forEach(monster => {
     monster.move();
     monster.draw();
   });
 
-  // Draw the cannonballs
-  for (let i = 0; i < cannonballs.length; i++) {
+  for (const cannonball of cannonballs) {
     if (cannonballImage.complete && cannonballImage.naturalWidth > 0) {
-      ctx.drawImage(cannonballImage, cannonballs[i].x, cannonballs[i].y, cannonballs[i].width, cannonballs[i].height);
+      ctx.drawImage(cannonballImage, cannonball.x, cannonball.y, cannonball.width, cannonball.height);
     } else {
       ctx.fillStyle = 'gray';
-      ctx.fillRect(cannonballs[i].x, cannonballs[i].y, cannonballs[i].width, cannonballs[i].height);
+      ctx.fillRect(cannonball.x, cannonball.y, cannonball.width, cannonball.height);
     }
   }
 
-  // Draw and update fragments for explosion
   for (let i = fragments.length - 1; i >= 0; i--) {
     fragments[i].update();
     fragments[i].draw();
-
-    // Remove fragments once they are fully faded out
-    if (fragments[i].opacity <= 0) {
-      fragments.splice(i, 1);
-    }
+    if (fragments[i].opacity <= 0) fragments.splice(i, 1);
   }
 }
 
@@ -298,31 +314,20 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-// Resize the canvas when the window is resized
+// Event listeners
 window.addEventListener('resize', resizeCanvas);
 
-// Add keyboard controls for moving the fish (desktop)
 window.addEventListener('keydown', (event) => {
   switch (event.code) {
     case 'ArrowUp':
-    case 'KeyW':
-      fish.dy = -fish.speed;
-      break;
+    case 'KeyW': fish.dy = -fish.speed; break;
     case 'ArrowDown':
-    case 'KeyS':
-      fish.dy = fish.speed;
-      break;
+    case 'KeyS': fish.dy = fish.speed; break;
     case 'ArrowLeft':
-    case 'KeyA':
-      fish.dx = -fish.speed;
-      break;
+    case 'KeyA': fish.dx = -fish.speed; break;
     case 'ArrowRight':
-    case 'KeyD':
-      fish.dx = fish.speed;
-      break;
-    case 'Space':
-      shootCannonball();
-      break;
+    case 'KeyD': fish.dx = fish.speed; break;
+    case 'Space': shootCannonball(); break;
   }
 });
 
@@ -331,51 +336,39 @@ window.addEventListener('keyup', (event) => {
     case 'ArrowUp':
     case 'KeyW':
     case 'ArrowDown':
-    case 'KeyS':
-      fish.dy = 0;
-      break;
+    case 'KeyS': fish.dy = 0; break;
     case 'ArrowLeft':
     case 'KeyA':
     case 'ArrowRight':
-    case 'KeyD':
-      fish.dx = 0;
-      break;
+    case 'KeyD': fish.dx = 0; break;
   }
 });
 
-// Touch-based movement for mobile
 canvas.addEventListener('touchmove', (event) => {
-  event.preventDefault(); // Prevent scrolling
-
+  event.preventDefault();
   const touch = event.touches[0];
   const rect = canvas.getBoundingClientRect();
-
-  // Set fish position to follow the touch position
   fish.x = touch.clientX - rect.left - fish.width / 2;
   fish.y = touch.clientY - rect.top - fish.height / 2;
 
-  // Boundary detection to keep fish within canvas
   if (fish.x < 0) fish.x = 0;
-  if (fish.y < 0) fish.y = 0;
+  if (fish.y < restrictedArea.height) fish.y = restrictedArea.height;
   if (fish.x + fish.width > canvas.width) fish.x = canvas.width - fish.width;
   if (fish.y + fish.height > canvas.height) fish.y = canvas.height - fish.height;
 });
 
-// Touch-based shooting for mobile
 canvas.addEventListener('touchstart', (event) => {
-  event.preventDefault(); // Prevent scrolling
-
-  // Shoot a cannonball when the user taps on the screen
+  event.preventDefault();
   shootCannonball();
 });
 
-// Start the game loop after images are loaded
+// Start game
 fishImage.onload = function () {
   Promise.all(monsterImages.map(({ img }) => new Promise(resolve => img.onload = resolve)))
     .then(() => {
-      resizeCanvas(); // Initial canvas size
-      initializeHearts(); // Initialize the life bars with hearts at the start
-      addMonster(); // Start adding monsters every 5 seconds
-      gameLoop(); // Start the game loop
+      resizeCanvas();
+      initializeHearts();
+      addMonster();
+      gameLoop();
     });
 };
